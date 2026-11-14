@@ -1,0 +1,43 @@
+name: Upload CSV to Azure Blob Storage
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*.csv'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  upload-csv:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload CSV files
+        run: |
+          for file in *.csv; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file"
+
+              az storage blob upload \
+                --account-name storagefactory02 \
+                --container-name raw-data \
+                --name "$file" \
+                --file "$file" \
+                --auth-mode login \
+                --overwrite true
+            fi
+          done
